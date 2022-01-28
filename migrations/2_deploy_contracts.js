@@ -12,3 +12,10 @@ module.exports = function(deployer) {
   deployer.deploy(ConsumerRole);
   deployer.deploy(SupplyChain);
 };
+
+/*
+module.exports = function(deployer) {
+  deployer.deploy(TestProduct);
+  deployer.deploy(SupplyChain);
+}
+*/

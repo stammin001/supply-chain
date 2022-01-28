@@ -77,9 +77,30 @@ App = {
             App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
         }
 
-        App.getMetaskAccountID();
+        await App.getMetaskAccountID();
+        App.networkId = await web3.eth.net.getId();
+
+        App.initTest();
 
         return App.initSupplyChain();
+    },
+
+    initTest: function() {
+        console.log("Testing init");
+        var jsonTestProduct='../../build/contracts/TestProduct.json';
+        
+        // get contract instance
+        $.getJSON(jsonTestProduct, function(data) {
+            console.log('data',data);
+            var TestProductArtifact = data;
+            const deployedNetwork = TestProductArtifact.networks[App.networkId];
+            App.contracts.TestProduct2 = new web3.eth.Contract(
+                TestProductArtifact.abi,
+                deployedNetwork.address,
+            );
+        });
+
+        return App.bindEvents();
     },
 
     getMetaskAccountID: function () {
@@ -105,13 +126,17 @@ App = {
         $.getJSON(jsonSupplyChain, function(data) {
             console.log('data',data);
             var SupplyChainArtifact = data;
-            App.contracts.SupplyChain = TruffleContract(SupplyChainArtifact);
-            App.contracts.SupplyChain.setProvider(App.web3Provider);
-            
-            App.fetchItemBufferOne();
-            App.fetchItemBufferTwo();
-            App.fetchEvents();
 
+            //App.contracts.SupplyChain = TruffleContract(SupplyChainArtifact);
+            //App.contracts.SupplyChain.setProvider(App.web3Provider);
+
+            const deployedNetwork = SupplyChainArtifact.networks[App.networkId];
+            App.contracts.SupplyChain = new web3.eth.Contract(
+                SupplyChainArtifact.abi,
+                deployedNetwork.address,
+            );
+            
+//            App.fetchItemFarmDetails();
         });
 
         return App.bindEvents();
@@ -155,34 +180,72 @@ App = {
                 return await App.purchaseItem(event);
                 break;
             case 9:
-                return await App.fetchItemBufferOne(event);
+                return await App.fetchItemFarmDetails(event);
                 break;
             case 10:
-                return await App.fetchItemBufferTwo(event);
+                return await App.fetchItemProductDetails(event);
+                break;
+            case 91:
+                return await App.testProductGet(event);
+                break;
+            case 92:
+                return await App.testProductUpdate(event);
                 break;
             }
     },
 
-    harvestItem: function(event) {
-        event.preventDefault();
-        var processId = parseInt($(event.target).data('id'));
+    testProduct: function(event) {
 
-        App.contracts.SupplyChain.deployed().then(function(instance) {
-            return instance.harvestItem(
-                App.upc, 
-                App.metamaskAccountID, 
-                App.originFarmName, 
-                App.originFarmInformation, 
-                App.originFarmLatitude, 
-                App.originFarmLongitude, 
-                App.productNotes
-            );
+        console.log("entered testProduct function");
+        App.contracts.TestProduct.deployed().then(function(instance) {
+            console.log("entered testProduct contract");
+            return instance.getName();
         }).then(function(result) {
-            $("#ftc-item").text(result);
-            console.log('harvestItem',result);
+            $("#ownerID").text(result);
+            console.log('Name = ', result);
         }).catch(function(err) {
             console.log(err.message);
-        });
+        });  
+    },
+
+    testProductGet: async function(event) {
+        console.log("into test product get function");
+
+        const { name } = App.contracts.TestProduct2.methods;
+        const response = await name().call();
+
+        $("#name").val(response);
+        console.log("Response = ", response);
+    },
+
+    testProductUpdate: async function(event) {
+        console.log("into test product update function");
+        const { setName } = App.contracts.TestProduct2.methods;
+        const response = await setName($("#name").val()).send({from: App.metamaskAccountID});
+
+        console.log("Response = ", response);
+    },
+
+    harvestItem: async function(event) {
+        App.upc = $('#upc').val();
+        App.originFarmName = $('#originFarmName').val();
+        App.originFarmInformation = $('#originFarmInformation').val();
+        App.originFarmLatitude = $('#originFarmLatitude').val(); 
+        App.originFarmLongitude = $('#originFarmLongitude').val(); 
+        App.productNotes = $('#productNotes').val();
+        
+        console.log('Calling Harvest Item:', App);
+
+        const { harvestItem } = App.contracts.SupplyChain.methods;
+        const response = await harvestItem(App.upc,
+            App.metamaskAccountID, 
+            App.originFarmName, 
+            App.originFarmInformation, 
+            App.originFarmLatitude, 
+            App.originFarmLongitude, 
+            App.productNotes).send({from: App.metamaskAccountID});
+        
+        console.log('Harvest Item Response:', response);
     },
 
     processItem: function (event) {
@@ -286,34 +349,38 @@ App = {
         });
     },
 
-    fetchItemBufferOne: function () {
-    ///   event.preventDefault();
-    ///    var processId = parseInt($(event.target).data('id'));
+    fetchItemFarmDetails: async function () {
+
         App.upc = $('#upc').val();
         console.log('upc',App.upc);
 
-        App.contracts.SupplyChain.deployed().then(function(instance) {
-          return instance.fetchItemBufferOne(App.upc);
-        }).then(function(result) {
-          $("#ftc-item").text(result);
-          console.log('fetchItemBufferOne', result);
-        }).catch(function(err) {
-          console.log(err.message);
-        });
+        const { fetchItemFarmDetails } = App.contracts.SupplyChain.methods;
+        const response = await fetchItemFarmDetails(App.upc).call();
+
+        $("#sku").val(response.itemSKU);
+        $("#ownerID").val(response.ownerID);
+        $("#originFarmerID").val(response.originFarmerID);
+        $("#originFarmName").val(response.originFarmName);
+        $("#originFarmInformation").val(response.originFarmInformation);
+        $("#originFarmLatitude").val(response.originFarmLatitude);
+        $("#originFarmLongitude").val(response.originFarmLongitude);
+        console.log("Farm Details = ", response);
     },
 
-    fetchItemBufferTwo: function () {
-    ///    event.preventDefault();
-    ///    var processId = parseInt($(event.target).data('id'));
-                        
-        App.contracts.SupplyChain.deployed().then(function(instance) {
-          return instance.fetchItemBufferTwo.call(App.upc);
-        }).then(function(result) {
-          $("#ftc-item").text(result);
-          console.log('fetchItemBufferTwo', result);
-        }).catch(function(err) {
-          console.log(err.message);
-        });
+    fetchItemProductDetails: async function () {
+        App.upc = $('#upc').val();
+        console.log('upc',App.upc);
+
+        const { fetchItemProductDetails } = App.contracts.SupplyChain.methods;
+        const response = await fetchItemProductDetails(App.upc).call();
+
+        $("#sku").val(response.itemSKU);
+        $("#productNotes").val(response.productNotes);
+        $("#productPrice").val(response.productPrice);
+        $("#distributorID").val(response.distributorID);
+        $("#retailerID").val(response.retailerID);
+        $("#consumerID").val(response.consumerID);
+        console.log("Product Details = ", response);
     },
 
     fetchEvents: function () {
