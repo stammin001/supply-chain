@@ -1,4 +1,6 @@
 pragma solidity ^0.4.24;
+pragma experimental ABIEncoderV2;
+
 // Define a contract 'Supplychain'
 contract SupplyChain {
 
@@ -10,13 +12,6 @@ contract SupplyChain {
 
   // Define a variable called 'sku' for Stock Keeping Unit (SKU)
   uint  sku;
-
-  // Define a public mapping 'items' that maps the UPC to an Item.
-  mapping (uint => Item) items;
-
-  // Define a public mapping 'itemsHistory' that maps the UPC to an array of TxHash, 
-  // that track its journey through the supply chain -- to be sent from DApp.
-  mapping (uint => string[]) itemsHistory;
   
   // Define enum 'State' with the following values:
   enum State { 
@@ -50,6 +45,13 @@ contract SupplyChain {
     address retailerID; // Metamask-Ethereum address of the Retailer
     address consumerID; // Metamask-Ethereum address of the Consumer
   }
+
+  // Define a public mapping 'items' that maps the UPC to an Item.
+  mapping (uint => Item) items;
+
+  // Define a public mapping 'itemsHistory' that maps the UPC to an array of TxHash, 
+  // that track its journey through the supply chain -- to be sent from DApp.
+  mapping (uint => string[]) itemsHistory;
 
   // Define 8 events with the same 8 state values and accept 'upc' as input argument
   event Harvested(uint upc);
@@ -304,5 +306,13 @@ contract SupplyChain {
     retailerID,
     consumerID
     );
+  }
+
+  function addItemTransHistory(uint _upc, string memory _txhash) public {
+      itemsHistory[_upc].push(_txhash);
+  }
+
+  function getItemTransHisotry(uint _upc) public view returns (string[] memory txHashes) {
+    return itemsHistory[_upc];
   }
 }
