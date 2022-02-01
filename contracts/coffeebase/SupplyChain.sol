@@ -1,6 +1,9 @@
 pragma solidity ^0.4.24;
 pragma experimental ABIEncoderV2;
 
+import "../coffeeaccesscontrol/RetailerRole.sol";
+import "../coffeeaccesscontrol/ConsumerRole.sol";
+
 // Define a contract 'Supplychain'
 contract SupplyChain {
 
@@ -51,7 +54,8 @@ contract SupplyChain {
 
   // Define a public mapping 'itemsHistory' that maps the UPC to an array of TxHash, 
   // that track its journey through the supply chain -- to be sent from DApp.
-  mapping (uint => string[]) itemsHistory;
+  // Not used in DApp; Instead, used events
+//  mapping (uint => string[]) itemsHistory;
 
   // Define 8 events with the same 8 state values and accept 'upc' as input argument
   event Harvested(uint upc);
@@ -216,7 +220,11 @@ contract SupplyChain {
 
   // Define a function 'receiveItem' that allows the retailer to mark an item 'Received'
   function receiveItem(uint _upc) public shipped(_upc) {
-    // Access Control List enforced by calling Smart Contract / DApp
+
+    RetailerRole retailer_role = new RetailerRole();
+    retailer_role.addRetailer(msg.sender);
+    require(retailer_role.isRetailer(msg.sender), "caller is not retailer");
+
     items[_upc].ownerID = msg.sender;
     items[_upc].retailerID = msg.sender;
     items[_upc].itemState = State.Received;
@@ -226,7 +234,11 @@ contract SupplyChain {
 
   // Define a function 'purchaseItem' that allows the consumer to mark an item 'Purchased'
   function purchaseItem(uint _upc) public received(_upc) {
-    // Access Control List enforced by calling Smart Contract / DApp
+
+    ConsumerRole consumer_role = new ConsumerRole();
+    consumer_role.addConsumer(msg.sender);
+    require(consumer_role.isConsumer(msg.sender), "caller is not consumer");
+
     items[_upc].ownerID = msg.sender;
     items[_upc].consumerID = msg.sender;
     items[_upc].itemState = State.Purchased;
@@ -308,11 +320,4 @@ contract SupplyChain {
     );
   }
 
-  function addItemTransHistory(uint _upc, string memory _txhash) public {
-      itemsHistory[_upc].push(_txhash);
-  }
-
-  function getItemTransHisotry(uint _upc) public view returns (string[] memory txHashes) {
-    return itemsHistory[_upc];
-  }
 }
