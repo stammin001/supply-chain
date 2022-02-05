@@ -123,7 +123,13 @@ App = {
             }
             console.log('getMetaskID:',res);
             App.metamaskAccountID = res[0];
+        });
 
+        window.ethereum.on('accountsChanged', function() {
+            web3.eth.getAccounts(function(err, res) {
+                App.metamaskAccountID = res[0];
+                console.log("selected different address", App.metamaskAccountID);
+            });
         })
     },
 
@@ -220,7 +226,7 @@ App = {
             App.originFarmLongitude, 
             App.productNotes).send({from: App.metamaskAccountID});
         
-            await App.fetchItemProductDetails();
+            await App.fetchItemFarmDetails();
             console.log('Harvest Item Response:', response);
     },
 
@@ -231,7 +237,7 @@ App = {
                 alert(error.message);
             });
 
-        await App.fetchItemProductDetails();
+        await App.fetchItemFarmDetails();
         console.log('Process Item Response:', response);
     },
     
@@ -242,7 +248,7 @@ App = {
                 alert(error.message);
             });
 
-        await App.fetchItemProductDetails();
+        await App.fetchItemFarmDetails();
         console.log('Pack Item Response:', response);
     },
 
@@ -254,7 +260,7 @@ App = {
                 alert(error.message);
             });
 
-        await App.fetchItemProductDetails();
+        await App.fetchItemFarmDetails();
         console.log('Sell Item Response:', response);
     },
 
@@ -266,7 +272,7 @@ App = {
                 alert(error.message);
             });
 
-        await App.fetchItemProductDetails();
+        await App.fetchItemFarmDetails();
         console.log('Buy Item Response:', response);
     },
 
@@ -277,7 +283,7 @@ App = {
                 alert(error.message);
             });
 
-        await App.fetchItemProductDetails();
+        await App.fetchItemFarmDetails();
         console.log('Ship Item Response:', response);
     },
 
@@ -288,7 +294,7 @@ App = {
                 alert(error.message);
             });
 
-        await App.fetchItemProductDetails();
+        await App.fetchItemFarmDetails();
         console.log('Receive Item Response:', response);
     },
 
@@ -299,7 +305,7 @@ App = {
                 alert(error.message);
             });
 
-        await App.fetchItemProductDetails();
+        await App.fetchItemFarmDetails();
         console.log('Purchase Item Response:', response);
     },
 

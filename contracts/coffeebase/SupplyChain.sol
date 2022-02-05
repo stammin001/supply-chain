@@ -1,5 +1,4 @@
 pragma solidity ^0.4.24;
-pragma experimental ABIEncoderV2;
 
 import "../coffeeaccesscontrol/RetailerRole.sol";
 import "../coffeeaccesscontrol/ConsumerRole.sol";
@@ -51,6 +50,9 @@ contract SupplyChain {
 
   // Define a public mapping 'items' that maps the UPC to an Item.
   mapping (uint => Item) items;
+
+  RetailerRole retailer_role = new RetailerRole();
+  ConsumerRole consumer_role = new ConsumerRole();
 
   // Define a public mapping 'itemsHistory' that maps the UPC to an array of TxHash, 
   // that track its journey through the supply chain -- to be sent from DApp.
@@ -221,7 +223,6 @@ contract SupplyChain {
   // Define a function 'receiveItem' that allows the retailer to mark an item 'Received'
   function receiveItem(uint _upc) public shipped(_upc) {
 
-    RetailerRole retailer_role = new RetailerRole();
     retailer_role.addRetailer(msg.sender);
     require(retailer_role.isRetailer(msg.sender), "caller is not retailer");
 
@@ -235,7 +236,6 @@ contract SupplyChain {
   // Define a function 'purchaseItem' that allows the consumer to mark an item 'Purchased'
   function purchaseItem(uint _upc) public received(_upc) {
 
-    ConsumerRole consumer_role = new ConsumerRole();
     consumer_role.addConsumer(msg.sender);
     require(consumer_role.isConsumer(msg.sender), "caller is not consumer");
 
